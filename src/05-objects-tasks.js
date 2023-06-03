@@ -20,8 +20,10 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
+function Rectangle(width, height) {
+  return {
+    width, height, getArea: () => width * height,
+  };
 }
 
 
@@ -35,8 +37,8 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
 
 
@@ -51,8 +53,8 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  return Object.setPrototypeOf(JSON.parse(json), proto);
 }
 
 
@@ -110,36 +112,110 @@ function fromJSON(/* proto, json */) {
  *  For more examples see unit tests.
  */
 
+function errorRepeatHelper(isError) {
+  if (isError) {
+    throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+  }
+}
+
+function errorQueueHelper(isError) {
+  if (isError) {
+    throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+  }
+}
+
+
+class HelperBuilder {
+  constructor(value, isElement) {
+    this.value = value;
+    this.isElement = isElement === 'element';
+    this.isPseudoElement = isElement === 'psevdo';
+    this.isId = isElement === 'id';
+    this.isClass = isElement === 'class';
+    this.isAttr = isElement === 'attr';
+    this.isPseudoClass = isElement === 'pseudoClass';
+  }
+
+  element(value) {
+    errorQueueHelper(this.isId);
+    errorRepeatHelper(this.isElement);
+
+    this.value += `${value}`;
+    this.isId = true;
+    return this;
+  }
+
+  id(value) {
+    errorQueueHelper(this.isClass || this.isPseudoElement);
+    errorRepeatHelper(this.isId);
+
+    this.value += `#${value}`;
+    this.isId = true;
+    return this;
+  }
+
+  class(value) {
+    errorQueueHelper(this.isAttr);
+    this.value += `.${value}`;
+    this.isClass = true;
+    return this;
+  }
+
+  attr(value) {
+    errorQueueHelper(this.isPseudoClass);
+    this.value += `[${value}]`;
+    return this;
+  }
+
+  pseudoClass(value) {
+    errorQueueHelper(this.isPseudoElement);
+    this.value += `:${value}`;
+    this.isPseudoClass = true;
+    return this;
+  }
+
+  pseudoElement(value) {
+    errorRepeatHelper(this.isPseudoElement);
+
+    this.value += `::${value}`;
+    this.isPseudoElement = true;
+    return this;
+  }
+
+  stringify() {
+    return this.value;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new HelperBuilder(value, 'element');
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new HelperBuilder(`#${value}`, 'id');
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new HelperBuilder(`.${value}`, 'class');
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new HelperBuilder(`[${value}]`, 'attr');
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new HelperBuilder(`:${value}`, 'pseudoClass');
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return new HelperBuilder(`::${value}`, 'psevdo');
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    return new HelperBuilder(`${selector1.stringify()} ${combinator} ${selector2.stringify()}`, 'element');
   },
 };
-
 
 module.exports = {
   Rectangle,
