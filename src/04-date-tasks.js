@@ -105,7 +105,7 @@ function angleBetweenClockHands(date) {
     ? (angleBeetwen / 180) * Math.PI
     : ((angleBeetwen - 180) / 180) * Math.PI;
 
-  return Math.abs(toRad);
+  return toRad;
 }
 
 
